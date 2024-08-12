@@ -34,7 +34,7 @@ void ImnavGoal::processAndPublishGoal() {
     double x_star = goal_x - origin_x;
     double y_star = goal_y - origin_y;
 
-    goal.target_pose.header.frame_id = "base_footprint";
+    goal.target_pose.header.frame_id = "map";
     goal.target_pose.header.stamp = ros::Time::now();
 
     goal.target_pose.pose.position.x = x_star;
@@ -46,7 +46,7 @@ void ImnavGoal::processAndPublishGoal() {
 
     ac.waitForResult();
 
-    if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED) {
+    if (ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED) {
         ROS_INFO("Goal achieved, proceeding with next goal");
     }
     else {
@@ -64,6 +64,13 @@ std::tuple<double, double, int> ImnavGoal::gpsToUTM(double lat, double lon) {
 
 int main(int argc, char** argv) {
     ros::init(argc, argv, "imnav_goal_node");
+    
+    MoveBaseClient ac("move_base", true);
+
+    while (!ac.waitForServer(ros::Duration(5.0))) {
+        ROS_INFO("Waiting for the move_base action server to come up");
+    }
+    
     ImnavGoal imnav_goal;
     ros::spin();
     return 0;
