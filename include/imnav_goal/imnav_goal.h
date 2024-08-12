@@ -20,8 +20,6 @@ private:
     ros::Subscriber origin_sub_;
     ros::Subscriber goal_sub_;
 
-    MoveBaseClient ac("move_base", true);
-
     move_base_msgs::MoveBaseGoal goal;
 
     sensor_msgs::NavSatFix origin_gps_;
