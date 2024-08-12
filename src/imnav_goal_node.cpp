@@ -3,7 +3,6 @@
 ImnavGoal::ImnavGoal() : origin_received_(false), last_goal_published_(false) {
     origin_sub_ = nh_.subscribe("/origin_gps", 1, &ImnavGoal::originCallback, this);
     goal_sub_ = nh_.subscribe("/gps_goal_fix", 1, &ImnavGoal::goalCallback, this);
-    goal_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal", 1);
 }
 
 void ImnavGoal::originCallback(const sensor_msgs::NavSatFix::ConstPtr& msg) {
@@ -20,24 +19,11 @@ void ImnavGoal::goalCallback(const sensor_msgs::NavSatFix::ConstPtr& msg) {
         return;
     }
 
-    if (isNewGoal(*msg)) {
-        last_goal_ = *msg;
-        last_goal_published_ = false;
-        processAndPublishGoal();
-    }
-}
-
-bool ImnavGoal::isNewGoal(const sensor_msgs::NavSatFix& new_goal) {
-    const double epsilon = 1e-7;  // Small threshold for floating point comparison
-    return std::abs(new_goal.latitude - last_goal_.latitude) > epsilon ||
-           std::abs(new_goal.longitude - last_goal_.longitude) > epsilon;
+    last_goal_ = *msg;
+    processAndPublishGoal();
 }
 
 void ImnavGoal::processAndPublishGoal() {
-    if (last_goal_published_) {
-        return;
-    }
-
     auto [origin_x, origin_y, origin_zone] = gpsToUTM(origin_gps_.latitude, origin_gps_.longitude);
     auto [goal_x, goal_y, goal_zone] = gpsToUTM(last_goal_.latitude, last_goal_.longitude);
 
@@ -48,17 +34,24 @@ void ImnavGoal::processAndPublishGoal() {
     double x_star = goal_x - origin_x;
     double y_star = goal_y - origin_y;
 
-    geometry_msgs::PoseStamped goal_msg;
-    goal_msg.header.stamp = ros::Time::now();
-    goal_msg.header.frame_id = "map";
-    goal_msg.pose.position.x = x_star;
-    goal_msg.pose.position.y = y_star;
-    goal_msg.pose.orientation.w = 1.0;
+    goal.target_pose.header.frame_id = "base_footprint";
+    goal.target_pose.header.stamp = ros::Time::now();
 
-    goal_pub_.publish(goal_msg);
+    goal.target_pose.pose.position.x = x_star;
+    goal.target_pose.pose.position.y = y_star;
+
+    ac.sendGoal(goal);
+
     ROS_INFO("Published new goal: x=%f, y=%f", x_star, y_star);
 
-    last_goal_published_ = true;
+    ac.waitForResult();
+
+    if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED) {
+        ROS_INFO("Goal achieved, proceeding with next goal");
+    }
+    else {
+        ROS_INFO("Failed to achieve goal");
+    }
 }
 
 std::tuple<double, double, int> ImnavGoal::gpsToUTM(double lat, double lon) {

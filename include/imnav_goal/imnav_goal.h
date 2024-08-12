@@ -5,7 +5,11 @@
 #include <sensor_msgs/NavSatFix.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <GeographicLib/UTMUPS.hpp>
+#include <move_base_msgs/MoveBaseAction.h>
+#include <actionlib/client/simple_action_client.h>
 #include <cmath>
+
+typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
 
 class ImnavGoal {
 public:
@@ -15,7 +19,10 @@ private:
     ros::NodeHandle nh_;
     ros::Subscriber origin_sub_;
     ros::Subscriber goal_sub_;
-    ros::Publisher goal_pub_;
+
+    MoveBaseClient ac("move_base", true);
+
+    move_base_msgs::MoveBaseGoal goal;
 
     sensor_msgs::NavSatFix origin_gps_;
     bool origin_received_;
@@ -26,7 +33,6 @@ private:
     void goalCallback(const sensor_msgs::NavSatFix::ConstPtr& msg);
     std::tuple<double, double, int> gpsToUTM(double lat, double lon);
     void processAndPublishGoal();
-    bool isNewGoal(const sensor_msgs::NavSatFix& new_goal);
 };
 
 #endif // IMNAV_GOAL_H
