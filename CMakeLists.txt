@@ -5,6 +5,8 @@ add_compile_options(-std=c++17)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  actionlib
+  move_base_msgs
   sensor_msgs
   geometry_msgs
 )

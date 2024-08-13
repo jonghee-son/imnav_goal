@@ -19,13 +19,13 @@ private:
     ros::NodeHandle nh_;
     ros::Subscriber origin_sub_;
     ros::Subscriber goal_sub_;
+    MoveBaseClient ac;
 
     move_base_msgs::MoveBaseGoal goal;
 
     sensor_msgs::NavSatFix origin_gps_;
     bool origin_received_;
     sensor_msgs::NavSatFix last_goal_;
-    bool last_goal_published_;
 
     void originCallback(const sensor_msgs::NavSatFix::ConstPtr& msg);
     void goalCallback(const sensor_msgs::NavSatFix::ConstPtr& msg);

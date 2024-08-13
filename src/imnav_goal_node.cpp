@@ -1,8 +1,12 @@
 #include <imnav_goal/imnav_goal.h>
 
-ImnavGoal::ImnavGoal() : origin_received_(false), last_goal_published_(false) {
+ImnavGoal::ImnavGoal() : origin_received_(false), ac("move_base", true) {
     origin_sub_ = nh_.subscribe("/origin_gps", 1, &ImnavGoal::originCallback, this);
     goal_sub_ = nh_.subscribe("/gps_goal_fix", 1, &ImnavGoal::goalCallback, this);
+    while(!ac.waitForServer(ros::Duration(5.0))){
+        ROS_INFO("Waiting for the move_base action server to come up");
+    }
+    ROS_INFO("Connected to move_base");
 }
 
 void ImnavGoal::originCallback(const sensor_msgs::NavSatFix::ConstPtr& msg) {
@@ -64,13 +68,6 @@ std::tuple<double, double, int> ImnavGoal::gpsToUTM(double lat, double lon) {
 
 int main(int argc, char** argv) {
     ros::init(argc, argv, "imnav_goal_node");
-    
-    MoveBaseClient ac("move_base", true);
-
-    while (!ac.waitForServer(ros::Duration(5.0))) {
-        ROS_INFO("Waiting for the move_base action server to come up");
-    }
-    
     ImnavGoal imnav_goal;
     ros::spin();
     return 0;
